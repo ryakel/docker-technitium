@@ -1,0 +1,32 @@
+FROM rkelch/alpine-base:latest
+
+ENV DOTNET_VER=5.0.4 DOTNET_ARCH=arm64
+
+LABEL maintainer=rkelch
+LABEL dotnet_version=${DOTNET_VER} dotnet_arch=${DOTNET_ARCH}
+
+RUN \
+ apk add --no-cache --virtual=run-deps \
+    libstdc++ \
+    libgcc \
+    icu-libs \
+    libintl \
+    libcap \
+	  tar
+
+RUN \
+  wget -O dotnet.tar.gz https://dotnetcli.azureedge.net/dotnet/Runtime/${DOTNET_VER}/dotnet-runtime-${DOTNET_VER}-linux-musl-${DOTNET_ARCH}.tar.gz \
+  && mkdir -p /usr/share/dotnet \
+  && tar -C /usr/share/dotnet -oxzf dotnet.tar.gz \
+  && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
+  && rm dotnet.tar.gz
+
+RUN \
+  wget https://download.technitium.com/dns/DnsServerPortable.tar.gz && \
+  tar -zxf DnsServerPortable.tar.gz -C /app && \
+  setcap CAP_NET_BIND_SERVICE=+eip /usr/share/dotnet/dotnet
+
+
+WORKDIR /app
+EXPOSE 5380 53/udp
+COPY root/ /
